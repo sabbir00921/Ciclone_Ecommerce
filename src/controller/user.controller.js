@@ -1,10 +1,174 @@
 const { CustomError } = require("../helpers/customError");
+const { mailer } = require("../helpers/nodemailer");
 const user = require("../model/user.model");
+const {
+  registrationOtpVerificationtemplate,
+  resendOtpVerificationtemplate,
+  resetPassword,
+} = require("../template/registration.template");
+const { apiResponse } = require("../utils/apiResponse");
 const { asyncHandaler } = require("../utils/async.Handler");
+const { validateUser } = require("../validation/user.validation");
+const crypto = require("crypto");
 
-exports.registration = asyncHandaler((req, res) => {
-  throw new CustomError(401,"Email Missing from user controller",data = null)
+exports.registration = asyncHandaler(async (req, res) => {
+  const value = await validateUser(req);
+
+  // now save the user data in DB
+  const userData = await new user({
+    name: value.name,
+    email: value.email,
+    password: value.password,
+  }).save();
+
+  const otp = crypto.randomInt(1000, 9999);
+  const expireTime = Date.now() + 10 * 60 * 1000;
+  const flink = "https://dummyjson.com/products";
+
+  // verification email
+  const template = registrationOtpVerificationtemplate(
+    "VIRUS COMPUTER",
+    userData.name,
+    userData.email,
+    otp,
+    flink
+  );
+  await mailer("OTP for email verification", template, userData.email);
+
+  (userData.emailVerificationOtp = otp),
+    (userData.emailVerificationExpTime = expireTime);
+  await userData.save();
+
+  res.status(200).json({ message: "succesful", data: userData });
 });
-exports.login = asyncHandaler((req, res) => {
-  throw new Error ("Error from login")
+
+// Verify mail
+exports.verifyEmail = asyncHandaler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    throw new CustomError(401, "Email or OTP missing");
+  }
+  // find the user using email for check otp validity
+  const findUser = await user.findOne({
+    $and: [
+      { email: email },
+      { emailVerificationOtp: otp },
+      { emailVerificationExpTime: { $gt: Date.now() } },
+    ],
+  });
+  if (!findUser) {
+    throw new CustomError(401, "User not found or time expired !!");
+  }
+  findUser.isEmailVerified = true;
+  findUser.emailVerificationOtp = null;
+  findUser.emailVerificationExpTime = null;
+  const userData = await findUser.save();
+  apiResponse.sendSucess(res, 200, "Email veridfication successfull", findUser);
+});
+
+//Resend OTP
+exports.resendOtp = asyncHandaler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new CustomError(401, "Email missing");
+  }
+  // now save the user data in DB
+  const userData = await user.findOne({
+    $and: [{ email: email }, { isEmailVerified: (isEmailVerified = false) }],
+  });
+
+  if (!userData) {
+    throw new CustomError(401, "User not found or already verified");
+  }
+  const otp = crypto.randomInt(1000, 9999);
+  const expireTime = Date.now() + 10 * 60 * 1000;
+  const flink = "https://dummyjson.com/products";
+
+  // verification email
+  const template = resendOtpVerificationtemplate(
+    "VIRUS COMPUTER",
+    userData.name,
+    userData.email,
+    otp,
+    flink
+  );
+  await mailer("Resend OTP for email verification", template, userData.email);
+  (userData.emailVerificationOtp = otp),
+    (userData.emailVerificationExpTime = expireTime);
+  await userData.save();
+
+  apiResponse.sendSucess(res, 200, "Otp resent in your email", {
+    name: userData.name,
+  });
+});
+
+// forget password
+exports.forgetPassword = asyncHandaler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new CustomError(401, "Email missing");
+  }
+  // now save the user data in DB
+  const userData = await user.findOne({ email: email });
+
+  if (!userData) {
+    throw new CustomError(401, "User not found");
+  }
+
+  // reset front-end link
+  const flink = "https://dummyjson.com/products";
+
+  // verification email
+  const template = resetPassword(flink);
+
+  await mailer("Reset password", template, userData.email);
+
+  apiResponse.sendSucess(res, 200, "Reset pasword link sent in your email", {
+    name: userData.name,
+  });
+});
+
+// reset password
+exports.resetPassword = asyncHandaler(async (req, res) => {
+  const { email, newPassword, confirmPassword } = req.body;
+
+  if (!email || !newPassword || !confirmPassword) {
+    throw new CustomError(401, "Email or password missing");
+  }
+  if (newPassword !== confirmPassword) {
+    throw new CustomError(401, "Password dont match !!");
+  }
+
+
+  const regEx =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#_\-])[A-Za-z\d@$!%*?&^#_\-]{8,}$/;
+  if (!regEx.test(newPassword || confirmPassword)) {
+    throw new CustomError(
+      401,
+      "Password must be at least 8 characters, include 1 uppercase, 1 lowercase, 1 number, and 1 special character."
+    );
+  }
+  // check pasword macth or not
+  if (newPassword !== confirmPassword) {
+    throw new CustomError(401, "Password dont match !!");
+  }
+  // now save the user data in DB
+  const userData = await user.findOne({ email });
+  if (!userData) {
+    throw new CustomError(401, "User not found !!");
+  }
+
+  // change Password
+  userData.password = newPassword;
+  await userData.save();
+  apiResponse.sendSucess(res, 200, "Password is updated", {
+    name: userData.name,
+  });
+});
+
+exports.login = asyncHandaler(async (req, res) => {
+  throw new Error("Error from resend Otp");
 });

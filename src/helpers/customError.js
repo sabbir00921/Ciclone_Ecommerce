@@ -1,5 +1,5 @@
 class CustomError extends Error {
-  constructor(statusCode, message,data) {
+  constructor(statusCode, message,data = null) {
     super(message);
     this.status =
       statusCode >= 400 && statusCode < 500 ? "client Error" : "server Error";
@@ -13,7 +13,8 @@ class CustomError extends Error {
 module.exports = { CustomError };
 
 /**
- *  Error are two typers. operational and non-operational.
+ * Error are two typers. operational and non-operational.
+ * -------------------------------------------------------
  * Server failed or erroe is operational error
  * Client error is non operational error
  */

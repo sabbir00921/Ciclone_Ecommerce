@@ -1,5 +1,5 @@
 const developementError = (error, res) => {
-  return res.status(error.statusCode).json({
+  return res.status(error.statusCode || 500).json({
     message: error.message,
     status: error.status,
     statusCode: error.statusCode,

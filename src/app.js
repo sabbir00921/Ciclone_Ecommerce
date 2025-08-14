@@ -14,9 +14,14 @@ app.use(cors());
 // route
 app.use("/api/v1", require("./routes/index.api"));
 
+
+
+
+
+
 // global error handleing middleware
 /**
- * must be last
+ * must be last position
  */
 app.use(globalErrorhandaler);
 

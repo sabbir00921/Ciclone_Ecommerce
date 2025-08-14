@@ -86,6 +86,8 @@ const userSchema = new Schema({
       ref: "Permission",
     },
   ],
+  emailVerificationOtp: Number,
+  emailVerificationExpTime: Date,
   resetPaswordOtp: Number,
   resetPaswordExpDate: Date,
   twoFactorEnabled: Boolean,
@@ -110,16 +112,21 @@ userSchema.pre("save", async function (next) {
 
 // check user email or phone already exist or not
 userSchema.pre("save", async function (next) {
-  const isExist = this.constructor.findOne({
-    $or: [{ email: this.email }, { phone: this.phone }],
+  const isExist = await this.constructor.findOne({
+    $or: [{ email: this.email }],
   });
-  if (isExist && isExist._id.toString() !== this._id.toString()) {
+
+  if (
+    isExist &&
+    isExist._id.toString() !== this._id.toString() &&
+    isExist._id.toString() == this._id.toString()
+  ) {
     throw new Error("Email or phone already exist");
   }
   next();
 });
 
-// Compare password method
+// Compare human readable password with Hash password password method
 userSchema.method.comparePassword = async function (humanPass) {
   await bcrypt.compare(humanPass, this.password);
 };
