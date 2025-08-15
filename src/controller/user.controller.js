@@ -1,3 +1,4 @@
+const path = require("path");
 const { CustomError } = require("../helpers/customError");
 const { mailer } = require("../helpers/nodemailer");
 const user = require("../model/user.model");
@@ -142,7 +143,6 @@ exports.resetPassword = asyncHandaler(async (req, res) => {
     throw new CustomError(401, "Password dont match !!");
   }
 
-
   const regEx =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#_\-])[A-Za-z\d@$!%*?&^#_\-]{8,}$/;
   if (!regEx.test(newPassword || confirmPassword)) {
@@ -170,5 +170,38 @@ exports.resetPassword = asyncHandaler(async (req, res) => {
 });
 
 exports.login = asyncHandaler(async (req, res) => {
-  throw new Error("Error from resend Otp");
+  const { email, password, phone } = await validateUser(req);
+
+  // finduser
+  const findUser = await user.findOne({ email, phone });
+  if (!findUser) {
+    throw new CustomError(401, "User not found !!");
+  }
+
+  const isMatchedPassword = await findUser.comparePassword(password);
+
+  if (!isMatchedPassword) {
+    throw new CustomError(401, "Password not match !!");
+  }
+console.log(findUser.generateAccesstoken);
+
+  // generate access token and refresh token
+  const accessToken = await findUser.generateRefreshToken();
+  const refreshToken = await findUser.generateRefreshtoken();
+  // Set refresh token as a cookie
+  res.cookie("RefreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict", // lux frontend backend domain same,
+    path: "/",
+    maxAge: 15 * 24 * 60 * 60 * 1000,
+  });
+
+  // set refresh token into db
+  findUser.refreshToken = refreshToken;
+  await findUser.save();
+  apiResponse.sendSucess(res, 200, "Login succesful", {
+    name: findUser.name,
+    accessToken: accessToken,
+  });
 });

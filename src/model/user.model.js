@@ -127,27 +127,27 @@ userSchema.pre("save", async function (next) {
 });
 
 // Compare human readable password with Hash password password method
-userSchema.method.comparePassword = async function (humanPass) {
-  await bcrypt.compare(humanPass, this.password);
+userSchema.methods.comparePassword = async function (humanPass) {
+  return await bcrypt.compare(humanPass, this.password);
 };
 
 // generate access token
-userSchema.method.generateAccesstoken = async function () {
-  return await jwt.sign(
+userSchema.methods.generateRefreshToken = async function () {
+  return  jwt.sign(
     {
       id: this._id,
       email: this.email,
       role: this.role,
       phone: this.phone,
     },
-    process.env.ACCESROKEN_SECRET,
-    { expiresIn: process.env.ACCESROKEN_EXPIRE }
+    process.env.ACCESTOKEN_SECRET,
+    { expiresIn: process.env.ACCESTOKEN_EXPIRE }
   );
 };
 
 // generate refresh token
-userSchema.method.generateRefreshtoken = async function () {
-  return await jwt.sign(
+userSchema.methods.generateRefreshtoken = async function () {
+  return jwt.sign(
     {
       id: this._id,
     },
@@ -157,12 +157,12 @@ userSchema.method.generateRefreshtoken = async function () {
 };
 
 // Verify access token
-userSchema.method.verifyAccessToken = async function (token) {
-  return await jwt.verify(token, process.env.ACCESROKEN_SECRET);
+userSchema.methods.verifyAccessToken = async function (token) {
+  return await jwt.verify(token, process.env.ACCESTOKEN_SECRET);
 };
 
 // Verify refresh token
-userSchema.method.verifyRefreshToken = async function (token) {
+userSchema.methods.verifyRefreshToken = async function (token) {
   return await jwt.verify(token, process.env.REFRESH_SECRET);
 };
 module.exports = mongoose.model("user", userSchema);
