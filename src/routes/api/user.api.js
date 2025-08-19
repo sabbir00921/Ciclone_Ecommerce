@@ -8,5 +8,6 @@ _.route("/resend-Otp").post(userController.resendOtp);
 _.route("/forget-Password").post(userController.forgetPassword);
 _.route("/reset-password").post(userController.resetPassword);
 _.route("/login").post(userController.login);
+_.route("/logout").post(userController.logout);
 
 module.exports = _;

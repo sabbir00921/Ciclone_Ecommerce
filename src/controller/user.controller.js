@@ -2,6 +2,7 @@ const path = require("path");
 const { CustomError } = require("../helpers/customError");
 const { mailer } = require("../helpers/nodemailer");
 const user = require("../model/user.model");
+const jwt = require("jsonwebtoken");
 const {
   registrationOtpVerificationtemplate,
   resendOtpVerificationtemplate,
@@ -11,6 +12,7 @@ const { apiResponse } = require("../utils/apiResponse");
 const { asyncHandaler } = require("../utils/async.Handler");
 const { validateUser } = require("../validation/user.validation");
 const crypto = require("crypto");
+const { smsSender } = require("../helpers/sendSms");
 
 exports.registration = asyncHandaler(async (req, res) => {
   const value = await validateUser(req);
@@ -18,52 +20,70 @@ exports.registration = asyncHandaler(async (req, res) => {
   // now save the user data in DB
   const userData = await new user({
     name: value.name,
-    email: value.email,
+    email: value.email || null,
+    phone: value.phone || null,
     password: value.password,
   }).save();
 
   const otp = crypto.randomInt(1000, 9999);
   const expireTime = Date.now() + 10 * 60 * 1000;
-  const flink = "https://dummyjson.com/products";
 
-  // verification email
-  const template = registrationOtpVerificationtemplate(
-    "VIRUS COMPUTER",
-    userData.name,
-    userData.email,
-    otp,
-    flink
-  );
-  await mailer("OTP for email verification", template, userData.email);
+  // For email registration
+  if (value.email) {
+    const flink = `https://frontend.com/verify-account/${userData.email}`;
+    // verification email
+    const template = registrationOtpVerificationtemplate(
+      "VIRUS COMPUTER",
+      userData.name,
+      userData.email,
+      otp,
+      flink
+    );
+    await mailer("OTP for email verification", template, userData.email);
 
-  (userData.emailVerificationOtp = otp),
-    (userData.emailVerificationExpTime = expireTime);
-  await userData.save();
+    (userData.emailVerificationOtp = otp),
+      (userData.emailVerificationExpTime = expireTime);
+    await userData.save();
 
-  res.status(200).json({ message: "succesful", data: userData });
+    apiResponse.sendSucess(res, 201, "Registration Successfull", {
+      name: userData.name,
+      phone: userData.email,
+    });
+  }
+
+  // For number registration
+  if (value.phone) {
+    const flink = `https://frontend.com/verify-account/${userData.phone}`;
+    const smsBody = `Your account verification OTP is ${otp}. Verify your account now: ${flink}. OTP expires in ${(expirySeconds = 10)} minutes.`;
+    // await smsSender(userData.phone, smsBody);
+    (userData.phoneVerificationOtp = otp),
+      (userData.phoneVerificationExpTime = expireTime);
+    await userData.save();
+    apiResponse.sendSucess(res, 201, "Registration Successfull", { userData });
+  }
 });
 
 // Verify mail
 exports.verifyEmail = asyncHandaler(async (req, res) => {
-  const { email, otp } = req.body;
-
-  if (!email || !otp) {
+  const { email, phone, otp } = req.body;
+  const test = email || phone;
+  if (!test || !otp) {
     throw new CustomError(401, "Email or OTP missing");
   }
   // find the user using email for check otp validity
   const findUser = await user.findOne({
     $and: [
-      { email: email },
-      { emailVerificationOtp: otp },
-      { emailVerificationExpTime: { $gt: Date.now() } },
+      { $or: [{ email: email }, { phone: phone }] },
+      { phoneVerificationOtp: otp },
+      { phoneVerificationExpTime: { $gt: Date.now() } },
     ],
   });
   if (!findUser) {
-    throw new CustomError(401, "User not found or time expired !!");
+    throw new CustomError(401, "invalid otp or time expired !!");
   }
-  findUser.isEmailVerified = true;
-  findUser.emailVerificationOtp = null;
-  findUser.emailVerificationExpTime = null;
+  findUser.isPhoneVerified = true;
+  findUser.phoneVerificationOtp = null;
+  findUser.phoneVerificationExpTime = null;
   const userData = await findUser.save();
   apiResponse.sendSucess(res, 200, "Email veridfication successfull", findUser);
 });
@@ -120,7 +140,7 @@ exports.forgetPassword = asyncHandaler(async (req, res) => {
   }
 
   // reset front-end link
-  const flink = "https://dummyjson.com/products";
+  const flink = "https://dummyjson.com/reset-passors";
 
   // verification email
   const template = resetPassword(flink);
@@ -165,10 +185,11 @@ exports.resetPassword = asyncHandaler(async (req, res) => {
   userData.password = newPassword;
   await userData.save();
   apiResponse.sendSucess(res, 200, "Password is updated", {
-    name: userData.name,
+    password: userData.password,
   });
 });
 
+// Login portion implement
 exports.login = asyncHandaler(async (req, res) => {
   const { email, password, phone } = await validateUser(req);
 
@@ -183,7 +204,7 @@ exports.login = asyncHandaler(async (req, res) => {
   if (!isMatchedPassword) {
     throw new CustomError(401, "Password not match !!");
   }
-console.log(findUser.generateAccesstoken);
+  console.log(findUser.generateAccesstoken);
 
   // generate access token and refresh token
   const accessToken = await findUser.generateRefreshToken();
@@ -191,7 +212,7 @@ console.log(findUser.generateAccesstoken);
   // Set refresh token as a cookie
   res.cookie("RefreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "development" ? false : true,
     sameSite: "Strict", // lux frontend backend domain same,
     path: "/",
     maxAge: 15 * 24 * 60 * 60 * 1000,
@@ -204,4 +225,37 @@ console.log(findUser.generateAccesstoken);
     name: findUser.name,
     accessToken: accessToken,
   });
+});
+
+// Logout
+
+exports.logout = asyncHandaler(async (req, res) => {
+  const token = req?.headers?.authorization || req?.body?.accessToken;
+  const decode = jwt.verify(token, process.env.ACCESTOKEN_SECRET);
+
+  const findUser = await user.findById(decode.id);
+
+  // clear the refress token
+  findUser.refreshToken = null;
+  await findUser.save();
+
+  // Clear cookie in browser
+  res.clearCookie("RefreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "development" ? false : true,
+    sameSite: "Strict", // lux frontend backend domain same,
+    path: "/",
+  });
+
+  // // send SMS
+  // const smsRes = await smsSender(
+  //   "01880840849",
+  //   "Logout succesfull " + findUser.name
+  // );
+  // if (smsRes.response_code !== 202) {
+  //   throw new CustomError(500, "Send sms failed");
+  // }
+
+  apiResponse.sendSucess(res, 200, "Logout successful", findUser);
+  return res.status(301, "Logout successfull");
 });

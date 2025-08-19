@@ -11,46 +11,46 @@ const userSchema = new Schema({
   },
   email: {
     type: String,
-    reqired: true,
+    required: true,
     trim: true,
     unique: [true, "Email must be unique"],
   },
   password: {
     type: String,
     trim: true,
-    reqired: true,
+    required: true,
   },
   phone: {
     type: Number,
-    reqired: true,
+    required: true,
     trim: true,
   },
   image: {
     type: String,
-    reqired: true,
+    required: true,
   },
   isEmailVerified: Boolean,
-  isNumberVerified: Boolean,
+  isPhoneVerified: Boolean,
   address: {
     type: String,
-    reqired: true,
+    required: true,
   },
   city: {
     type: String,
-    reqired: true,
+    required: true,
   },
   state: {
     type: String,
-    reqired: true,
+    required: true,
   },
   country: {
     type: String,
-    reqired: true,
+    required: true,
     default: "bangladesh",
   },
   zipCode: {
     type: Number,
-    reqired: true,
+    required: true,
   },
   dateOfBirth: Date,
   gender: {
@@ -88,6 +88,8 @@ const userSchema = new Schema({
   ],
   emailVerificationOtp: Number,
   emailVerificationExpTime: Date,
+  phoneVerificationOtp: Number,
+  phoneVerificationExpTime: Date,
   resetPaswordOtp: Number,
   resetPaswordExpDate: Date,
   twoFactorEnabled: Boolean,
@@ -133,7 +135,7 @@ userSchema.methods.comparePassword = async function (humanPass) {
 
 // generate access token
 userSchema.methods.generateRefreshToken = async function () {
-  return  jwt.sign(
+  return jwt.sign(
     {
       id: this._id,
       email: this.email,
@@ -163,6 +165,6 @@ userSchema.methods.verifyAccessToken = async function (token) {
 
 // Verify refresh token
 userSchema.methods.verifyRefreshToken = async function (token) {
-  return await jwt.verify(token, process.env.REFRESH_SECRET);
+  // return await jwt.verify(token, process.env.REFRESH_SECRET);
 };
 module.exports = mongoose.model("user", userSchema);
