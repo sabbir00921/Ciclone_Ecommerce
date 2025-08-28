@@ -14,5 +14,6 @@ _.route("/update-category/:slug").put(
   categoryController.updateCategory
 );
 _.route("/delete-category/:slug").delete(categoryController.deleteCategory);
+_.route("/active-category").delete(categoryController.activeCategory)
 
 module.exports = _;

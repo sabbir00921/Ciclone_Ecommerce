@@ -97,3 +97,23 @@ exports.deleteCategory = asyncHandaler(async (req, res) => {
     deletecategory
   );
 });
+
+// Get axtive category
+exports.activeCategory = asyncHandaler(async (req, res) => {
+  const active = req.query.active;
+
+  const activeCategory = await categoryModel
+    .find({ isActive: active })
+    .sort({ createdAt: -1 });
+  if (!activeCategory)
+    throw new CustomError(
+      401,
+      `${active == true ? "Active" : "Not Active"}active category not found`
+    );
+  apiResponse.sendSucess(
+    res,
+    200,
+    `${(active == true ? "Active" : "Not Active")} category data`,
+    activeCategory
+  );
+});
