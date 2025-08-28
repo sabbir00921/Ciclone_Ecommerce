@@ -36,7 +36,7 @@ exports.validateCategory = async (req) => {
         "image format now accepted. try with image/*jpg image/*png image/*jpeg image/*webp"
       );
     }
-    return value;
+    return {name:value.name, image:req?.files?.image[0]};
   } catch (error) {
     console.log(error);
 

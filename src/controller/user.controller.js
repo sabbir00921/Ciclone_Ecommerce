@@ -59,6 +59,11 @@ exports.registration = asyncHandaler(async (req, res) => {
     (userData.phoneVerificationOtp = otp),
       (userData.phoneVerificationExpTime = expireTime);
     await userData.save();
+    const smsRes = await smsSender(value.phone, smsBody);
+    if (smsRes.response_code !== 202) {
+      throw new CustomError(500, "Send sms failed");
+    }
+
     apiResponse.sendSucess(res, 201, "Registration Successfull", { userData });
   }
 });
@@ -247,14 +252,14 @@ exports.logout = asyncHandaler(async (req, res) => {
     path: "/",
   });
 
-  // // send SMS
-  // const smsRes = await smsSender(
-  //   "01880840849",
-  //   "Logout succesfull " + findUser.name
-  // );
-  // if (smsRes.response_code !== 202) {
-  //   throw new CustomError(500, "Send sms failed");
-  // }
+  // send SMS
+  const smsRes = await smsSender(
+    "01880840849",
+    "Logout succesfull " + findUser.name
+  );
+  if (smsRes.response_code !== 202) {
+    throw new CustomError(500, "Send sms failed");
+  }
 
   apiResponse.sendSucess(res, 200, "Logout successful", findUser);
   return res.status(301, "Logout successfull");

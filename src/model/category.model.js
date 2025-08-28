@@ -10,14 +10,14 @@ const categorySchema = new Schema(
       trim: true,
       required: true,
     },
-    image: {
-      type: String,
-      trim: true,
-      default: "",
-    },
+    image: {},
     slug: {
       type: String,
       unique: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     subCategory: [
       {

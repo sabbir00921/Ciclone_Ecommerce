@@ -11,7 +11,6 @@ const userSchema = new Schema({
   },
   email: {
     type: String,
-    required: true,
     trim: true,
     unique: [true, "Email must be unique"],
   },
@@ -22,35 +21,30 @@ const userSchema = new Schema({
   },
   phone: {
     type: Number,
-    required: true,
+
     trim: true,
   },
   image: {
     type: String,
-    required: true,
   },
   isEmailVerified: Boolean,
   isPhoneVerified: Boolean,
   address: {
     type: String,
-    required: true,
   },
   city: {
     type: String,
-    required: true,
   },
   state: {
     type: String,
-    required: true,
   },
   country: {
     type: String,
-    required: true,
+
     default: "bangladesh",
   },
   zipCode: {
     type: Number,
-    required: true,
   },
   dateOfBirth: Date,
   gender: {
