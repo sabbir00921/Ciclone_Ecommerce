@@ -6,7 +6,7 @@ const { CustomError } = require("../helpers/customError");
 const categorySchema = new Schema(
   {
     name: {
-      type: String,
+      type: String, 
       trim: true,
       required: true,
     },

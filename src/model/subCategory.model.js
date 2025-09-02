@@ -84,11 +84,11 @@ subCategorySchema.pre("save", async function (next) {
   next();
 });
 
-// populate
-subCategorySchema.pre("find", function autopopulate(next) {
-  this.populate("category");
-  next();
-});
+// // populate
+// subCategorySchema.pre("find", function autopopulate(next) {
+//   this.populate("category");
+//   next();
+// });
 // subCategorySchema.pre("findOneAndUpdate", function autopopulate(next) {
 //   this.populate("category");
 //   next();

@@ -28,7 +28,10 @@ exports.createCategory = asyncHandaler(async (req, res) => {
 
 // get all category
 exports.getallCategory = asyncHandaler(async (req, res) => {
-  const allCatergory = await categoryModel.find().sort({ createdAt: -1 });
+  const allCatergory = await categoryModel
+    .find()
+    .populate("subCategory", "-updatedAt -__v")
+    .sort({ createdAt: -1 });
   if (!allCatergory) throw new CustomError(401, "All category not found");
   apiResponse.sendSucess(res, 200, "All category data found", allCatergory);
 });
@@ -41,7 +44,8 @@ exports.getSingleCategory = asyncHandaler(async (req, res) => {
     .findOne({
       slug,
     })
-    .select("name image isActive slug -_id");
+    .populate("subCategory")
+    .select("name image isActive slug subCategory");
   if (!getSingleCategory) throw new CustomError(401, "Single data not found");
   apiResponse.sendSucess(
     res,
@@ -113,7 +117,7 @@ exports.activeCategory = asyncHandaler(async (req, res) => {
   apiResponse.sendSucess(
     res,
     200,
-    `${(active == true ? "Active" : "Not Active")} category data`,
+    `${active == true ? "Active" : "Not Active"} category data`,
     activeCategory
   );
 });

@@ -26,7 +26,6 @@ exports.validateCategory = async (req) => {
       throw new CustomError(401, "image must be single");
     }
     if (image?.size > 200000) {
-      console.log(image.size);
 
       throw new CustomError(401, "image size must be below 2MB");
     }
@@ -38,8 +37,6 @@ exports.validateCategory = async (req) => {
     }
     return {name:value.name, image:req?.files?.image[0]};
   } catch (error) {
-    console.log(error);
-
     throw new CustomError(401, error);
   }
 };
