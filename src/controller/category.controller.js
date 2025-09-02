@@ -23,6 +23,7 @@ exports.createCategory = asyncHandaler(async (req, res) => {
   // test purpose
   apiResponse.sendSucess(res, 200, "Category Created succesful", {
     name: category.name,
+    _id: category._id,
   });
 });
 

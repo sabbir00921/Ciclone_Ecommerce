@@ -58,15 +58,14 @@ exports.getSingleSubCategory = asyncHandaler(async (req, res) => {
 exports.updateSubCategory = asyncHandaler(async (req, res) => {
   const { slug } = req.params;
   if (!slug) throw new CustomError(401, "Slug not faound");
-  let updateSubCategory = await subCategoryModel
-    .findOneAndUpdate(
-      { slug },
-      {
-        ...req.body,
-      },
-      { new: true }
-    )
-    // .populate("category", "name subCategory");
+  let updateSubCategory = await subCategoryModel.findOneAndUpdate(
+    { slug },
+    {
+      ...req.body,
+    },
+    { new: true }
+  );
+  // .populate("category", "name subCategory");
 
   if (req?.body?.category) {
     // Remove subcategory id From previous category
@@ -96,9 +95,10 @@ exports.updateSubCategory = asyncHandaler(async (req, res) => {
   }
 
   // Populate later because pull push and solve old data store
-  
-  updateSubCategory = await updateSubCategory.populate("category", "name subCategory");
-
+  updateSubCategory = await updateSubCategory.populate(
+    "category",
+    "name subCategory"
+  );
 
   if (!updateSubCategory)
     throw new CustomError(401, "Subcategory item not found");
@@ -108,5 +108,37 @@ exports.updateSubCategory = asyncHandaler(async (req, res) => {
     200,
     "Update subcategory successful",
     updateSubCategory
+  );
+});
+
+// Delete subCategory
+exports.deleteSubcategory = asyncHandaler(async (req, res) => {
+  const { slug } = req.params;
+
+  if (!slug) throw new CustomError(501, "Slug not found!!");
+
+  const deletedSubCategory = await subCategoryModel.findOneAndDelete({
+    slug: slug,
+  });
+  if (!deletedSubCategory)
+    throw new CustomError(501, "Subcategory delete failed!!");
+  if (deletedSubCategory.category._id) {
+    const category = await categoryModel.findOneAndUpdate(
+      {
+        _id: deletedSubCategory.category._id,
+      },
+      {
+        $pull: { subCategory: deletedSubCategory._id },
+      },
+      {
+        new: true,
+      }
+    );
+  }
+  apiResponse.sendSucess(
+    res,
+    200,
+    "Subcategory deleted successful/category not found",
+    deletedSubCategory
   );
 });
