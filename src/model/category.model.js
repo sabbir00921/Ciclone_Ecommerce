@@ -6,7 +6,7 @@ const { CustomError } = require("../helpers/customError");
 const categorySchema = new Schema(
   {
     name: {
-      type: String, 
+      type: String,
       trim: true,
       required: true,
     },
@@ -18,6 +18,10 @@ const categorySchema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    discount: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "discount",
     },
     subCategory: [
       {
