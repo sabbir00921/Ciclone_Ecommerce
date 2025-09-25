@@ -14,6 +14,7 @@ _.route("/update-product-image/:slug").put(
   upload.fields([{ name: "image", maxCount: 10 }]),
   productController.updateproductimage
 );
-_.route("/search-product").get(productController.getProducts)
+_.route("/search-product").get(productController.getProducts);
+_.route("/delete-product/:slug").delete(productController.deleteproduct);
 
 module.exports = _;

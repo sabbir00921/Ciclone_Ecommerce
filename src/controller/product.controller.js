@@ -61,7 +61,7 @@ exports.createProduct = asyncHandaler(async (req, res) => {
 
 // get all product
 exports.getallproducts = asyncHandaler(async (req, res) => {
-  const data = "ok";
+  console.log("get all data");
 
   const allProducts = await productModel
     .find({})
@@ -158,7 +158,7 @@ exports.updateproductimage = asyncHandaler(async (req, res) => {
   apiResponse.sendSucess(res, 200, "Single products data found", product);
 });
 
-// get producy by category id, subcategory id, brand id
+// get producy by category id, subcategory id, brand id, tag, sortBy
 exports.getProducts = asyncHandaler(async (req, res) => {
   const {
     category,
@@ -169,8 +169,9 @@ exports.getProducts = asyncHandaler(async (req, res) => {
     tag,
     minPrice,
     maxPrice,
-    sortName,
-    sortOrder,
+    page = 1,
+    item = 2,
+    sort_by,
   } = req?.query;
 
   // ! SET query if it given or exist in req.query or search params
@@ -178,10 +179,8 @@ exports.getProducts = asyncHandaler(async (req, res) => {
   if (category) query = { ...query, category: category };
   if (subCategory) query = { ...query, subCategory: subCategory };
   if (brand) query = { ...query, brand: brand };
-  // search by tags
   if (tag)
     query = { ...query, tag: { $all: Array.isArray(tag) ? tag : [tag] } };
-
   if (color) query = { ...query, color: color };
   if (name) query = { ...query, name: { $regex: name, $options: "i" } };
 
@@ -193,7 +192,6 @@ exports.getProducts = asyncHandaler(async (req, res) => {
         {
           retailPrice: { $gte: Number(minPrice), $lte: Number(maxPrice) },
         },
-
         {
           wholesalePrice: { $gte: Number(minPrice), $lte: Number(maxPrice) },
         },
@@ -202,16 +200,60 @@ exports.getProducts = asyncHandaler(async (req, res) => {
   }
 
   // sort data logic implement
-  const sortField = sortName || "retailPrice";
-  const order = sortOrder?.toLowerCase() === "dec" ? -1 : 1;
+  let sortQuery = {};
+  if (sort_by == "name-assending") {
+    sortQuery = { name: 1 };
+  } else if (sort_by == "name-desending") {
+    sortQuery = { name: -1 };
+  } else if (sort_by == "date-assending") {
+    sortQuery = { createdAt: 1 };
+  } else if (sort_by == "date-desending") {
+    sortQuery = { createdAt: -1 };
+  } else if (sort_by == "price-assending") {
+    sortQuery = { retailPrice: 1 };
+  } else if (sort_by == "price-desending") {
+    sortQuery = { retailPrice: -1 };
+  }
 
+  // pagination
+  let skipAmount = (page - 1) * item;
+  const totalitems = await productModel.countDocuments(query);
+  const totalPage = Math.ceil(totalitems / item);
   //get the products
   const products = await productModel
     .find(query)
-    .sort({ [sortField]: order })
+    .skip(skipAmount)
+    .limit(item)
+    .sort(sortQuery)
     .select("-barcode -qrcode");
   if (!products || products.length === 0)
     throw new CustomError(401, "products not found");
 
-  apiResponse.sendSucess(res, 200, "Single products data found", products);
+  apiResponse.sendSucess(res, 200, "Single products data found", {
+    totalitems,
+    totalPage,
+    products,
+  });
+});
+
+// delete product
+exports.deleteproduct = asyncHandaler(async (req, res) => {
+  const { slug } = req?.params;
+  if (!slug) throw new CustomError(401, "Slug not faound");
+
+  const deleteproduct = await productModel.findOneAndDelete({
+    slug,
+  });
+
+  if (!deleteproduct) throw new CustomError(401, "Product delete faield");
+  // delete previous cloudinary image
+
+  if (deleteproduct.image?.length >= 1) {
+    for (const image of deleteproduct.image) {
+      const deleteimage = await deleteCloudinary(image?.public_id);
+      if (!deleteimage) throw new CustomError(401, "Image delete faield");
+    }
+  }
+
+  apiResponse.sendSucess(res, 200, "Product delete succesfull", deleteproduct);
 });

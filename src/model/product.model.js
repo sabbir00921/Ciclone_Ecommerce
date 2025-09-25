@@ -88,10 +88,10 @@ const productSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Shipping",
     },
-    variant: {
+    variant: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Variant",
-    },
+    }],
 
     // Availability
     availability: {
