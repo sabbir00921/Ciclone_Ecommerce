@@ -83,7 +83,7 @@ exports.validateVariant = async (req) => {
       }
 
       images.forEach((img) => {
-        if (img.size > 2_000_000) {
+        if (img.size > 2000000) {
           throw new CustomError(401, `Image ${img.originalname} exceeds 2MB.`);
         }
         if (!allowFormat.includes(img.mimetype)) {

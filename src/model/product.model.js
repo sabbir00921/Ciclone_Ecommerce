@@ -6,7 +6,12 @@ const { CustomError } = require("../helpers/customError");
 // Review Schema
 const reviewSchema = new Schema(
   {
-    reviewId: {
+    reviewerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
       required: true,
@@ -21,12 +26,7 @@ const reviewSchema = new Schema(
       min: 0,
       max: 5,
     },
-    image: [
-      {
-        type: String,
-        default: null,
-      },
-    ],
+    image: [{}],
   },
   { timestamps: true }
 );
@@ -88,10 +88,12 @@ const productSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Shipping",
     },
-    variant: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Variant",
-    }],
+    variant: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Variant",
+      },
+    ],
 
     // Availability
     availability: {
