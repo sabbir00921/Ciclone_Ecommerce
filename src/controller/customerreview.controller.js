@@ -62,7 +62,7 @@ exports.updateReview = asyncHandaler(async (req, res) => {
   matchReview.comment = value.comment || matchReview.comment;
   matchReview.rating = value.rating || matchReview.rating;
   if (imagesAssets.length) {
-    console.log();
+    
     matchReview.image = [...(matchReview.image || []), ...imagesAssets];
   }
 
