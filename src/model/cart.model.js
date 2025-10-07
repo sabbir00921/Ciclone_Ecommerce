@@ -56,6 +56,10 @@ const cartSchema = new Schema(
       ref: "Coupon",
       default: null,
     },
+    couponCode: {
+      type: String,
+      default: null
+    },
     grosstotalAmount: {
       type: Number,
       required: true,
