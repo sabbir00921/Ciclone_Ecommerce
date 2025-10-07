@@ -3,10 +3,15 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const morgan = require("morgan");
+const http = require("http");
 const { globalErrorhandaler } = require("./helpers/globalErrorHandaler");
+const { initSocket } = require("./soket/server");
 /**
  * all global middleware
  */
+// make note server using express
+const server = http.createServer(app);
+
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 } else {
@@ -15,7 +20,7 @@ if (process.env.NODE_ENV === "development") {
 app.use(express.json());
 app.use(express.urlencoded({ urlencoded: true }));
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({ origin: "http://localhost:5171" }));
 
 // route
 app.use("/api/v1", require("./routes/index.api"));
@@ -25,5 +30,6 @@ app.use("/api/v1", require("./routes/index.api"));
  * must be last position
  */
 app.use(globalErrorhandaler);
+const io = initSocket(server);
 
-module.exports = { app };
+module.exports = { server, io };

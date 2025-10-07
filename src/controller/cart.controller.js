@@ -6,6 +6,7 @@ const cartModel = require("../model/cart.model");
 const productModel = require("../model/product.model");
 const variantModel = require("../model/variant.model");
 const couponModel = require("../model/coupon.model");
+const { getIo } = require("../soket/server");
 
 // apply coupon
 const applyCoupon = async (
@@ -160,6 +161,11 @@ exports.addtocart = asyncHandaler(async (req, res) => {
 
   // save the cart database
   await cart.save();
+  const io = getIo();
+  io.to("123").emit("addtocart", {
+    message: "add to cart succesfully",
+    data: cart,
+  });
 
   apiResponse.sendSucess(res, 200, "Brand created successfully!!", cart);
 });
@@ -222,7 +228,11 @@ exports.decreaseQuantity = asyncHandaler(async (req, res) => {
     cart.discountType = null;
   }
   await cart.save();
-
+  const io = getIo();
+  io.to("123").emit("cart", {
+    message: "Cart item decrease",
+    data: cart,
+  });
   apiResponse.sendSucess(res, 200, "Cart Item decrease successfully!!", cart);
 });
 
@@ -285,7 +295,12 @@ exports.increaseQuantity = asyncHandaler(async (req, res) => {
     cart.discountType = null;
   }
   await cart.save();
-  
+  const io = getIo();
+  io.to("123").emit("cart", {
+    message: "Cart item increase",
+    data: cart,
+  });
+
   apiResponse.sendSucess(res, 200, "Cart Item increase successfully!!", cart);
 });
 
@@ -343,8 +358,13 @@ exports.deleteCartItem = asyncHandaler(async (req, res) => {
   await cart.save();
 
   // If there is no item in cart then delete cart
+  const io = getIo();
   if (cart.items.length === 0) {
     await cartModel.findOneAndDelete({ _id: cart._id });
+    io.to("123").emit("cart", {
+      message: "Cart deleted",
+      data: "null",
+    });
     return apiResponse.sendSucess(
       res,
       200,
@@ -352,7 +372,9 @@ exports.deleteCartItem = asyncHandaler(async (req, res) => {
       null
     );
   }
-
+  io.to("123").emit("cart", {
+    message: "Cart item deleted",
+    data: cart,
+  });
   apiResponse.sendSucess(res, 200, "Cart Item Deleted successfully!!", cart);
 });
- 
