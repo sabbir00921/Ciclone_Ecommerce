@@ -3,7 +3,7 @@ exports.asyncHandaler = (fn) => {
     try {
       await fn(req, res);
     } catch (error) {
-      console.log("Error from async handaler function",error);
+      // console.log("Error from async handaler function",error);
       next(error);
     }
   };
