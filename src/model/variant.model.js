@@ -46,6 +46,10 @@ const variantSchema = new Schema(
       type: Number,
       default: 0,
     },
+    totalSale: {
+      type: Number,
+      default: 0,
+    },
     warehouseLocation: {
       type: mongoose.Types.ObjectId,
       ref: "Warehouse",

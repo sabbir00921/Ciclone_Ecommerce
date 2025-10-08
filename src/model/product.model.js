@@ -141,6 +141,10 @@ const productSchema = new Schema(
       type: Number,
       default: 0,
     },
+    totalSale: {
+      type: Number,
+      default: 0,
+    },
     warehouseLocation: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Warehouse",

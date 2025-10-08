@@ -60,19 +60,28 @@ const orderSchema = new Schema(
       email: { type: String },
       address: { type: String, required: false },
       country: { type: String, default: "Bangladesh" },
+      deliveryZone: { type: String },
     },
 
     deliveryCharge: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "DeliveryCharge",
     },
-    finalAmount: {
+    totalAmount: {
       type: Number,
       default: 0,
     },
     discountAmount: {
       type: Number,
       default: 0,
+    },
+    finalAmount: {
+      type: Number,
+      default: 0,
+    },
+    discountType: {
+      type: String,
+      default: null,
     },
     paymentMethod: {
       type: String,
