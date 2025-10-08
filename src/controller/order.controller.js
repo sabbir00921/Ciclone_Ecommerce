@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+const SSLCommerzPayment = require("sslcommerz-lts");
 const { asyncHandaler } = require("../utils/async.Handler");
 const { CustomError } = require("../helpers/customError");
 const { apiResponse } = require("../utils/apiResponse");
@@ -8,7 +10,10 @@ const variantModel = require("../model/variant.model");
 const invoiceModel = require("../model/invoice.model");
 const deliveryChargeModel = require("../model/delivery.model");
 const { validateOrder } = require("../validation/order.validation");
-const crypto = require("crypto");
+
+const store_id = "sabbi68e6c568b7167";
+const store_passwd = "sabbi68e6c568b7167@ssl";
+const is_live = process.env.NODE_ENV == "development" ? false : true;
 
 //create order
 exports.createOrder = asyncHandaler(async (req, res) => {
@@ -79,7 +84,8 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       deliveryChargeId
     );
 
-    order.totalAmount = cart.fgrosstotalAmount;
+    order.grosstotalAmount = cart.grosstotalAmount;
+    order.totalAmount = cart.finalAmount;
     order.discountAmount = cart.discountAmount || 0;
     order.discountType = cart.discountType || null;
     order.deliveryCharge = deliveryCharge;
@@ -91,14 +97,16 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       .randomUUID()
       .split("-")[0]
       .toLocaleUpperCase()}`;
-      
+
     // invoice database make
     const invoice = await invoiceModel.create({
       invoiceId: transId,
       order: order._id,
       customerDetails: shippingInfo,
+      grosstotalAmount: order.grosstotalAmount,
       totalAmount: order.totalAmount,
       discountAmount: order.discountAmount,
+      discountType: order.discountType,
       deliveryCharge: order.deliveryCharge,
       finalAmount: order.finalAmount,
     });
@@ -111,9 +119,40 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       order.orderStatus = "pending";
       order.invoiceId = invoice.invoiceId;
     } else {
+      const data = {
+        total_amount: order.finalAmount,
+        currency: "BDT",
+        tran_id: transId, // use unique tran_id for each api call
+        success_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/success`,
+        fail_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/fail`,
+        cancel_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/cancel`,
+        ipn_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/ipn`,
+        shipping_method: "NO",
+        product_name: "Computer.",
+        product_category: "Electronic",
+        product_profile: "general",
+        cus_name: "Customer Name",
+        cus_email: "customer@example.com",
+        cus_add1: "Dhaka",
+        cus_city: "Dhaka",
+        cus_postcode: "1000",
+        cus_country: "Bangladesh",
+        cus_phone: "01711111111",
 
+        // ship_name: "Customer Name",
+        // ship_add1: "Dhaka",
+        // ship_city: "Dhaka",
+        // ship_state: "Dhaka",
+        // ship_postcode: 1000,
+        // ship_country: "Bangladesh",
+      };
+      const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+      const sslResponse = await sslcz.init(data);
+      console.log(sslResponse,"jgtdyts");
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+  }
 
   apiResponse.sendSucess(res, 200, "Brand created successfully!!", cart);
 });

@@ -26,7 +26,7 @@ const orderValidationSchema = Joi.object(
         "any.required": "Address is required in shipping info.",
       }),
     }).required(),
-    deliveryCharge: Joi.string().required().messages({
+    deliveryChargeId: Joi.string().required().messages({
       "string.base": "Delivery charge ID must be a string.",
       "any.required": "Delivery charge is required.",
     }),

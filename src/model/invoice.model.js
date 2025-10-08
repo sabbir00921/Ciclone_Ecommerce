@@ -16,6 +16,10 @@ const invoiceSchema = new Schema(
       required: [true, "Order reference is required"],
     },
     customerDetails: {},
+    grosstotalAmount: {
+      type: Number,
+      default: 0,
+    },
     totalAmount: {
       type: Number,
       required: [true, "Total amount is required"],
@@ -25,6 +29,10 @@ const invoiceSchema = new Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    discountType: {
+      type: String,
+      default: null,
     },
     finalAmount: {
       type: Number,

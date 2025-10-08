@@ -23,7 +23,7 @@ app.use(cookieParser());
 app.use(cors({ origin: "http://localhost:5171" }));
 
 // route
-app.use("/api/v1", require("./routes/index.api"));
+app.use(process.env.BASE_API || "/api/v1", require("./routes/index.api"));
 
 // global error handleing middleware
 /**
