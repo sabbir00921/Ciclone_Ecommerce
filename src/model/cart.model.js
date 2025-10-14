@@ -25,6 +25,10 @@ const cartSchema = new Schema(
           ref: "Variant",
           default: null,
         },
+        name: {
+          type: String,
+          default: null,
+        },
         quantity: {
           type: Number,
           required: true,
@@ -58,7 +62,7 @@ const cartSchema = new Schema(
     },
     couponCode: {
       type: String,
-      default: null
+      default: null,
     },
     grosstotalAmount: {
       type: Number,

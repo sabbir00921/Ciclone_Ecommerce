@@ -39,6 +39,7 @@ const applyCoupon = async (
       }
       afterDiscountPrice = totalPrice - coupon.discountValue;
     }
+
     const couponDetails = await coupon.save();
 
     return {
@@ -59,15 +60,18 @@ exports.addtocart = asyncHandaler(async (req, res) => {
   let product = null;
   let variant = null;
   let price = {};
+  let name = null;
 
   // find product info
   if (data?.product) {
     const productItem = await productModel.findOne({ _id: data.product });
     price = productItem.retailPrice;
+    name = productItem.name;
   }
   if (data?.variant) {
     const variantItem = await variantModel.findOne({ _id: data.variant });
     price = variantItem.retailPrice;
+    name = variantItem.variantName;
   }
 
   // Find user or guest id into cart model
@@ -109,6 +113,7 @@ exports.addtocart = asyncHandaler(async (req, res) => {
     cart.items.push({
       product: data.product,
       variant: data.variant,
+      name: name,
       quantity: data.quantity,
       price: price,
       totalPrice: Math.ceil(price * data.quantity),

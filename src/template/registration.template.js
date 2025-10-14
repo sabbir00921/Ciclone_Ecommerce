@@ -291,3 +291,147 @@ exports.resetPassword = (flink) => {
 
 `;
 };
+
+// resendOtp verication
+exports.orderConfirmation = (order) => {
+  return `
+<html lang="en" style="margin:0; padding:0;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Confirmation - ${order.invoiceId}</title>
+</head>
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f6f8; color:#333;">
+  <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:700px; margin:auto; background-color:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0px 4px 10px rgba(0,0,0,0.1);">
+    
+    <!-- Header -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #4A90E2, #357ABD); padding:20px; text-align:center; color:white;">
+        <h1 style="margin:0; font-size:24px;">Order Confirmation</h1>
+        <p style="margin:5px 0 0;">Invoice ID: ${order.invoiceId}</p>
+        <p style="margin:0; font-size:14px;">Date: ${new Date(
+          order.createdAt
+        ).toLocaleDateString()}</p>
+      </td>
+    </tr>
+
+    <!-- Greeting -->
+    <tr>
+      <td style="padding:20px; font-size:16px; line-height:1.6;">
+        Hi ${order.shippingInfo?.fullName || "Customer"},<br/>
+        Your order is confirmed. Here is your invoice for reference.
+      </td>
+    </tr>
+
+    <!-- Customer & Order Info -->
+    <tr>
+      <td style="padding:0 20px 20px 20px;">
+        <table width="100%" cellpadding="5" cellspacing="0" style="border-collapse:collapse;">
+          <tr>
+            <td style="vertical-align:top; width:50%;">
+              <strong>Bill To:</strong><br/>
+              ${order.shippingInfo?.fullName}<br/>
+              ${order.shippingInfo?.email}<br/>
+              ${order.shippingInfo?.phone}<br/>
+              ${order.shippingInfo?.address}<br/>
+              ${order.shippingInfo?.country}
+            </td>
+            <td style="vertical-align:top; width:50%; text-align:right;">
+              <strong>Order Info:</strong><br/>
+              Payment Status: ${order.paymentStatus || "Pending"}<br/>
+              Order Status: ${order.orderType || "Pending"}<br/>
+              Total Quantity: ${order.totalQuantity}<br/>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Items Table -->
+    <tr>
+      <td style="padding:0 20px 20px 20px;">
+        <table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; border:1px solid #ddd;">
+          <tr style="background-color:#f4f6f8; text-align:left;">
+            <th style="border-bottom:1px solid #ddd;">Item</th>
+            <th style="border-bottom:1px solid #ddd;">Quantity</th>
+            <th style="border-bottom:1px solid #ddd;">Unit Price</th>
+            <th style="border-bottom:1px solid #ddd;">Total</th>
+          </tr>
+          ${order.items
+            .map(
+              (item) => `
+              <tr>
+                <td style="border-bottom:1px solid #ddd;">
+                  ${item.product || item.variant ? item?.name : "N/A"}<br/>
+                  Size: ${item.size || "N/A"}, Color: ${item.color || "N/A"}
+                </td>
+                <td style="border-bottom:1px solid #ddd;">${item.quantity}</td>
+                <td style="border-bottom:1px solid #ddd;">${item.price} BDT</td>
+                <td style="border-bottom:1px solid #ddd;">${
+                  item.totalPrice
+                } BDT</td>
+              </tr>`
+            )
+            .join("")}
+        </table>
+      </td>
+    </tr>
+
+    <!-- Totals -->
+    <tr>
+      <td style="padding:0 20px 20px 20px;">
+        <table width="100%" cellpadding="6" cellspacing="0" style="margin-top:10px;">
+          <tr>
+            <td style="text-align:right;">Gross Total:</td>
+            <td style="text-align:right;">${order.grosstotalAmount} BDT</td>
+          </tr>
+          <tr>
+            <td style="text-align:right;">Discount (${
+              order.discountType || "N/A"
+            }):</td>
+            <td style="text-align:right;">-${order.discountAmount} ${
+    order.discountType == "percentage" ? "Percentage" : "BDT"
+  }</td>
+          </tr>
+          ${
+            order.discountType
+              ? `
+<tr>
+  <td style="text-align:right;">After Discount:</td>
+  <td style="text-align:right;">${order.totalAmount} BDT</td>
+</tr>`
+              : ""
+          }
+          <tr>
+            <td style="text-align:right;">Delivery Charge:</td>
+            <td style="text-align:right;">${order.deliveryCharge} BDT</td>
+          </tr>
+          <tr style="font-weight:bold; font-size:16px; border-top:1px solid #ddd;">
+            <td style="text-align:right;">Total Amount:</td>
+            <td style="text-align:right;">${order.finalAmount} BDT</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <!-- Print Button -->
+<tr>
+  <td style="text-align:center; padding:20px;">
+    <button 
+      onclick="window.print()" 
+      style="background-color:#357ABD; color:white; border:none; padding:10px 20px; border-radius:5px; font-size:16px; cursor:pointer;">
+      🖨 Print Invoice
+    </button>
+  </td>
+</tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="background-color:#f4f6f8; padding:15px; text-align:center; font-size:12px; color:#999;">
+        &copy; 2025 Your Company. All rights reserved.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+};

@@ -28,6 +28,10 @@ const orderSchema = new Schema(
           ref: "Variant",
           default: null,
         },
+        name: {
+          type: String,
+          default: null,
+        },
         quantity: {
           type: Number,
           required: true,
@@ -79,6 +83,10 @@ const orderSchema = new Schema(
       type: Number,
       default: 0,
     },
+    deliveryCharge: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     finalAmount: {
       type: Number,
       default: 0,
@@ -96,6 +104,10 @@ const orderSchema = new Schema(
       enum: ["pending", "success", "failed", "cancelled"],
       default: "pending",
     },
+    paymentInfo: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     transactionId: {
       type: String,
       default: null,
@@ -104,10 +116,7 @@ const orderSchema = new Schema(
       type: String,
       default: null,
     },
-    deliveryCharge: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
+
     orderStatus: {
       type: String,
       enum: [
@@ -147,13 +156,13 @@ const orderSchema = new Schema(
     },
     orderType: {
       type: String,
-      default: "complete",
+      default: "Complete",
     },
-    followUp: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
+    // followUp: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "User",
+    //   default: null,
+    // },
     totalQuantity: {
       type: Number,
       default: 0,

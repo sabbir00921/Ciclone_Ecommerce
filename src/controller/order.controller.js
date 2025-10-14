@@ -10,9 +10,11 @@ const variantModel = require("../model/variant.model");
 const invoiceModel = require("../model/invoice.model");
 const deliveryChargeModel = require("../model/delivery.model");
 const { validateOrder } = require("../validation/order.validation");
+const { mailer } = require("../helpers/nodemailer");
+const { orderConfirmation } = require("../template/registration.template");
 
-const store_id = "sabbi68e6c568b7167";
-const store_passwd = "sabbi68e6c568b7167@ssl";
+const store_id = process.env.STORE_ID;
+const store_passwd = process.env.STORE_PASSWORD;
 const is_live = process.env.NODE_ENV == "development" ? false : true;
 
 //create order
@@ -38,10 +40,9 @@ exports.createOrder = asyncHandaler(async (req, res) => {
   // find the user or guest in cart model
   const query = user ? { user: user } : { guestId: guestId };
 
-  const cart = await cartModel
-    .findOne(query)
-    .populate("items.product")
-    .populate("items.variant");
+  const cart = await cartModel.findOne(query);
+  // .populate("items.product")
+  // .populate("items.variant");
   if (!cart) throw new CustomError(401, "Cart not found!!");
 
   // reduce stock of product
@@ -75,7 +76,7 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       guestId: guestId,
       items: cart.items,
       shippingInfo: shippingInfo,
-      followUp: req.user || "",
+      // followUp: req.user || "N/A",
       totalQuantity: cart.totalQuantity,
     });
 
@@ -111,6 +112,9 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       finalAmount: order.finalAmount,
     });
 
+    // Decrease product and variant and update sales quantity
+    await Promise.all(allStockAdjustPromice);
+
     // CashOn delivery
     if (paymentMethod == "cod") {
       order.paymentMethod = "cod";
@@ -123,21 +127,21 @@ exports.createOrder = asyncHandaler(async (req, res) => {
         total_amount: order.finalAmount,
         currency: "BDT",
         tran_id: transId, // use unique tran_id for each api call
-        success_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/success`,
-        fail_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/fail`,
-        cancel_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/cancel`,
-        ipn_url: `${process.env.BACKENDLIVE_URL}${process.env.BASE_API}/payment/ipn`,
+        success_url: `${process.env.BACKEND_URL}${process.env.BASE_API}/payment/succes`,
+        fail_url: `${process.env.BACKEND_URL}${process.env.BASE_API}/payment/fail`,
+        cancel_url: `${process.env.BACKEND_URL}${process.env.BASE_API}/payment/cancel`,
+        ipn_url: `${process.env.BACKEND_URL}${process.env.BASE_API}/payment/ipn`,
         shipping_method: "NO",
         product_name: "Computer.",
         product_category: "Electronic",
         product_profile: "general",
-        cus_name: "Customer Name",
-        cus_email: "customer@example.com",
-        cus_add1: "Dhaka",
+        cus_name: shippingInfo.fullName,
+        cus_email: shippingInfo.email,
+        cus_add1: shippingInfo.address,
         cus_city: "Dhaka",
         cus_postcode: "1000",
         cus_country: "Bangladesh",
-        cus_phone: "01711111111",
+        cus_phone: shippingInfo.phone,
 
         // ship_name: "Customer Name",
         // ship_add1: "Dhaka",
@@ -148,11 +152,73 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       };
       const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
       const sslResponse = await sslcz.init(data);
-      console.log(sslResponse,"jgtdyts");
-    }
-  } catch (error) {
-    console.log(error);
-  }
+      // console.log(sslResponse);
 
-  apiResponse.sendSucess(res, 200, "Brand created successfully!!", cart);
+      // if SSLCommerzPayment update db from here
+      order.invoiceId = invoice.invoiceId;
+      const updatedOrder = await order.save();
+
+      let template = orderConfirmation(updatedOrder);
+      // send confirmation mail to user
+      sentMail(
+        "Order is confirmed",
+        template,
+        shippingInfo?.email || updatedOrder?.shippingInfo?.email
+      );
+
+      apiResponse.sendSucess(res, 200, "Order created successfully!!", {
+        url: sslResponse.GatewayPageURL,
+        orderData: updatedOrder,
+      });
+      return;
+    }
+    // if cod update db from here
+    const updatedOrder = await order.save();
+    apiResponse.sendSucess(
+      res,
+      200,
+      "Order created successfully!!",
+      updatedOrder
+    );
+  } catch (error) {
+    // rollback stock of product
+    let allStockAdjustPromice = [];
+
+    if (order && order._id) {
+      for (let item of cart.items) {
+        if (item.product) {
+          allStockAdjustPromice.push(
+            productModel.findOneAndUpdate(
+              { _id: item.product._id },
+              {
+                $inc: { totalStock: +item.quantity, totalSale: -item.quantity },
+              }
+            )
+          );
+        }
+        if (item.variant) {
+          allStockAdjustPromice.push(
+            variantModel.findOneAndUpdate(
+              { _id: item.variant._id },
+              {
+                $inc: {
+                  stockVariant: +item.quantity,
+                  totalSale: -item.quantity,
+                },
+              }
+            )
+          );
+        }
+      }
+    }
+    await Promise.all(allStockAdjustPromice);
+
+    console.log(error);
+    throw new CustomError(401, "order Create failed", error);
+  }
 });
+
+// sent confirmation mail
+const sentMail = async (subject, template, email) => {
+ await mailer(subject, template, email);
+};
