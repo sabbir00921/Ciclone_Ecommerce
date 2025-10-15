@@ -12,6 +12,8 @@ const deliveryChargeModel = require("../model/delivery.model");
 const { validateOrder } = require("../validation/order.validation");
 const { mailer } = require("../helpers/nodemailer");
 const { orderConfirmation } = require("../template/registration.template");
+const { smsSender } = require("../helpers/sendSms");
+const { log } = require("console");
 
 const store_id = process.env.STORE_ID;
 const store_passwd = process.env.STORE_PASSWORD;
@@ -157,14 +159,28 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       // if SSLCommerzPayment update db from here
       order.invoiceId = invoice.invoiceId;
       const updatedOrder = await order.save();
+      if (updatedOrder) {
+        // await cartModel.findOneAndDelete({ _id: cart._id });
+      }
 
-      let template = orderConfirmation(updatedOrder);
       // send confirmation mail to user
-      sentMail(
-        "Order is confirmed",
-        template,
-        shippingInfo?.email || updatedOrder?.shippingInfo?.email
-      );
+      if (shippingInfo?.email || updatedOrder?.shippingInfo?.email) {
+        let template = orderConfirmation(updatedOrder);
+        sentMail(
+          "Order is confirmed",
+          template,
+          shippingInfo?.email || updatedOrder?.shippingInfo?.email
+        );
+      }
+
+      // send confirmation message to user
+      if (shippingInfo?.phone || updatedOrder?.shippingInfo?.phone) {
+        let smsTemplate = `Hi ${updatedOrder.shippingInfo.fullName}, your order (Invoice: ${updatedOrder?.invoiceId}) has been confirmed. For more details check email. Thank you for shopping with us! by GURU`;
+        sentMessage(
+          shippingInfo?.phone || updatedOrder?.shippingInfo?.phone,
+          smsTemplate
+        );
+      }
 
       apiResponse.sendSucess(res, 200, "Order created successfully!!", {
         url: sslResponse.GatewayPageURL,
@@ -174,6 +190,9 @@ exports.createOrder = asyncHandaler(async (req, res) => {
     }
     // if cod update db from here
     const updatedOrder = await order.save();
+    if (updatedOrder) {
+      // await cartModel.findOneAndDelete({ _id: cart._id });
+    }
     apiResponse.sendSucess(
       res,
       200,
@@ -220,5 +239,9 @@ exports.createOrder = asyncHandaler(async (req, res) => {
 
 // sent confirmation mail
 const sentMail = async (subject, template, email) => {
- await mailer(subject, template, email);
+  // await mailer(subject, template, email);
+};
+// sent confirmation mail
+const sentMessage = async (number, template) => {
+  // const response = await smsSender(number, template);
 };
