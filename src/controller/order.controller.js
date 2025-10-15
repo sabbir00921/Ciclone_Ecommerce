@@ -245,3 +245,10 @@ const sentMail = async (subject, template, email) => {
 const sentMessage = async (number, template) => {
   // const response = await smsSender(number, template);
 };
+
+// Get all order
+exports.allOrder = asyncHandaler(async (req, res) => {
+  const allOrder = await orderModel.find().sort({ createdAt: -1 }).limit(30);
+  if (!allOrder.length) throw new CustomError(401, "Order not foud");
+  apiResponse.sendSucess(res, 200, "All Order data found", allOrder);
+});
