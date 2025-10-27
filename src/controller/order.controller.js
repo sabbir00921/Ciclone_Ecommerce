@@ -13,7 +13,7 @@ const { validateOrder } = require("../validation/order.validation");
 const { mailer } = require("../helpers/nodemailer");
 const { orderConfirmation } = require("../template/registration.template");
 const { smsSender } = require("../helpers/sendSms");
-const { log } = require("console");
+const { axiosInstance } = require("../helpers/axios");
 
 const store_id = process.env.STORE_ID;
 const store_passwd = process.env.STORE_PASSWORD;
@@ -122,7 +122,7 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       order.paymentMethod = "cod";
       order.paymentStatus = "pending";
       order.transactionId = transId;
-      order.orderStatus = "pending";
+      order.orderStatus = "Pending";
       order.invoiceId = invoice.invoiceId;
     } else {
       const data = {
@@ -154,13 +154,12 @@ exports.createOrder = asyncHandaler(async (req, res) => {
       };
       const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
       const sslResponse = await sslcz.init(data);
-      // console.log(sslResponse);
 
       // if SSLCommerzPayment update db from here
       order.invoiceId = invoice.invoiceId;
       const updatedOrder = await order.save();
       if (updatedOrder) {
-        // await cartModel.findOneAndDelete({ _id: cart._id });
+        await cartModel.findOneAndDelete({ _id: cart._id });
       }
 
       // send confirmation mail to user
@@ -181,7 +180,6 @@ exports.createOrder = asyncHandaler(async (req, res) => {
           smsTemplate
         );
       }
-
       apiResponse.sendSucess(res, 200, "Order created successfully!!", {
         url: sslResponse.GatewayPageURL,
         orderData: updatedOrder,
@@ -191,7 +189,7 @@ exports.createOrder = asyncHandaler(async (req, res) => {
     // if cod update db from here
     const updatedOrder = await order.save();
     if (updatedOrder) {
-      // await cartModel.findOneAndDelete({ _id: cart._id });
+      await cartModel.findOneAndDelete({ _id: cart._id });
     }
     apiResponse.sendSucess(
       res,
@@ -236,14 +234,16 @@ exports.createOrder = asyncHandaler(async (req, res) => {
     throw new CustomError(401, "order Create failed", error);
   }
 });
-
+//! sent confirmation
 // sent confirmation mail
 const sentMail = async (subject, template, email) => {
   // await mailer(subject, template, email);
+  console.log("Sent email message now off");
 };
 // sent confirmation mail
 const sentMessage = async (number, template) => {
   // const response = await smsSender(number, template);
+  console.log("Sent confimnation message now off for save money");
 };
 
 // Get all order
@@ -251,4 +251,133 @@ exports.allOrder = asyncHandaler(async (req, res) => {
   const allOrder = await orderModel.find().sort({ createdAt: -1 }).limit(30);
   if (!allOrder.length) throw new CustomError(401, "Order not foud");
   apiResponse.sendSucess(res, 200, "All Order data found", allOrder);
+});
+
+// Update order
+exports.updateOrder = asyncHandaler(async (req, res) => {
+  const { id } = req.params;
+  const { status, shippingInfo } = req.body;
+  const allowUpdates = ["Pending", "Hold", "Confirmed", "cancelled"];
+
+  const updateOrder = await orderModel.findOneAndUpdate(
+    { _id: id },
+    {
+      orderStatus: allowUpdates.includes(status) && status,
+      shippingInfo: { ...shippingInfo },
+    },
+    { new: true }
+  );
+  if (!updateOrder) throw new CustomError(401, "Order update failed");
+  apiResponse.sendSucess(res, 200, "Order updated successfully", updateOrder);
+});
+
+// Get all order status and updates info
+exports.getAllOrderStatusAndUpdateInfo = asyncHandaler(async (req, res) => {
+  const allOrderStatus = await orderModel.aggregate([
+    {
+      $group: {
+        _id: "$orderStatus",
+        count: { $sum: 1 },
+        totalAmount: { $sum: "$finalAmount" },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        statuses: { $push: "$$ROOT" },
+        totalQuantity: { $sum: "$count" },
+        grandTotalAmount: { $sum: "$totalAmount" },
+      },
+    },
+  ]);
+  if (!allOrderStatus)
+    throw new CustomError(401, "Order not found for check status and info.!");
+  apiResponse.sendSucess(
+    res,
+    200,
+    "Order updated successfully",
+    allOrderStatus
+  );
+});
+
+// delete order
+exports.deleteOrder = asyncHandaler(async (req, res) => {
+  const { id } = req.params;
+
+  const deleteOrder = await orderModel.findOneAndDelete(
+    { _id: id },
+    { new: true }
+  );
+  if (!deleteOrder) throw new CustomError(401, "Order Delete failed..!");
+
+  // rollback stock of product
+  let allStockAdjustPromice = [];
+
+  if (deleteOrder) {
+    for (let item of deleteOrder.items) {
+      if (item.product) {
+        allStockAdjustPromice.push(
+          productModel.findOneAndUpdate(
+            { _id: item.product._id },
+            {
+              $inc: { totalStock: +item.quantity, totalSale: -item.quantity },
+            }
+          )
+        );
+      }
+      if (item.variant) {
+        allStockAdjustPromice.push(
+          variantModel.findOneAndUpdate(
+            { _id: item.variant._id },
+            {
+              $inc: {
+                stockVariant: +item.quantity,
+                totalSale: -item.quantity,
+              },
+            }
+          )
+        );
+      }
+    }
+    await invoiceModel.findOneAndDelete({ invoiceId: deleteOrder.invoiceId });
+    await Promise.all(allStockAdjustPromice);
+  }
+
+  apiResponse.sendSucess(res, 200, "Order deleted successfully", deleteOrder);
+});
+
+// sent order in to courier
+exports.createCourier = asyncHandaler(async (req, res) => {
+  const { id } = req.body;
+
+  const Order = await orderModel.findOne({ _id: id });
+
+  if (!Order) throw new CustomError(401, "Order not found for courier..!");
+
+  try {
+    const response = await axiosInstance.post("/create_order", {
+      invoice: Order.invoiceId,
+      recipient_name: Order.shippingInfo.fullName,
+      recipient_phone: Order.shippingInfo.phone,
+      recipient_address: Order.shippingInfo.address,
+      cod_amount: Order.finalAmount,
+    });
+
+    if (response.data.status !== 200)
+      throw new CustomError(501, "Not sent order into courier");
+    Order.courier.name = "Stead Fast";
+    Order.courier.trackingId = response.data.consignment.tracking_code;
+    Order.courier.rawResponse = response.data;
+    Order.courier.status = response.data.status;
+  } catch (error) {
+    console.error(
+      "Error from Courier API:",
+      error.response?.data || error.message
+    );
+    throw new CustomError(401, "O!", error);
+  }
+
+  await Order.save();
+
+  apiResponse.sendSucess(res, 200, "Order deleted successfully", Order);
 });

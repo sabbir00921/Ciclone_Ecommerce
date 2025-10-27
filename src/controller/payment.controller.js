@@ -22,11 +22,11 @@ exports.success = asyncHandaler(async (req, res) => {
     order.validId = data.val_id;
     order.paymentStatus = "success";
     order.paymentInfo = data;
-    order.orderStatus = "confirmed";
+    order.orderStatus = "Confirmed";
     await order.save();
   }
 
-  // res.redirect("https://www.youtube.com/watch?v=fXkh3VufNe8");
+  res.redirect("https://www.youtube.com/watch?v=fXkh3VufNe8");
 });
 
 //fail

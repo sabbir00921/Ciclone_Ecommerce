@@ -2,6 +2,7 @@ const { asyncHandaler } = require("../utils/async.Handler");
 const { CustomError } = require("../helpers/customError");
 const { apiResponse } = require("../utils/apiResponse");
 const productModel = require("../model/product.model");
+const variantModel = require("../model/variant.model");
 const { validateProduct } = require("../validation/product.validation");
 const { uploadCloudinary, deleteCloudinary } = require("../helpers/cloudinary");
 const { generateQrcode, generateBarcode } = require("../helpers/Qrcode");
@@ -256,4 +257,121 @@ exports.deleteproduct = asyncHandaler(async (req, res) => {
   }
 
   apiResponse.sendSucess(res, 200, "Product delete succesfull", deleteproduct);
+});
+
+// Best selling
+exports.bestselling = asyncHandaler(async (req, res) => {
+  const bestSellingProducts = await productModel.aggregate([
+    {
+      $match: {
+        totalSale: { $gt: 10 },
+      },
+    },
+    {
+      $project: {
+        qrcode: 0, // this hides the qrcode field
+        barCode: 0, // this hides the barCode field
+      },
+    },
+  ]);
+  const bestSellingVariants = await variantModel.aggregate([
+    {
+      $match: {
+        totalSale: { $gt: 10 },
+      },
+    },
+    {
+      $project: {
+        qrCode: 0, // this hides the qrcode field
+        barCode: 0, // this hides the barCode field
+      },
+    },
+  ]);
+
+  //! working egregration
+  /**
+ *  const bestSelling = await productModel.aggregate([
+    {
+      $lookup: {
+        from: "variants",
+        localField: "variant",
+        foreignField: "_id",
+        as: "VariantData",
+      },
+    },
+    {
+      $addFields: {
+        highSaleVariants: {
+          $filter: {
+            input: "$VariantData",
+            as: "variant",
+            cond: { $gt: ["$$variant.totalSale", 7] },
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        totalSale: 1,
+        highSaleVariants: 1,
+      },
+    },
+    {
+      $match: {
+        $or: [
+          { totalSale: { $gt: 7 } },
+          { "highSaleVariants.0": { $exists: true } },
+        ],
+      },
+    },
+    {
+      $project: {
+        combinedItems: {
+          $concatArrays: [
+            {
+              $cond: [
+                { $gt: ["$totalSale", 7] },
+                [
+                  {
+                    type: "product",
+                    id: "$_id",
+                    name: "$name",
+                    totalSale: "$totalSale",
+                  },
+                ],
+                [],
+              ],
+            },
+            {
+              $map: {
+                input: "$highSaleVariants",
+                as: "v",
+                in: {
+                  type: "variant",
+                  id: "$$v._id",
+                  name: "$$v.variantName",
+                  totalSale: "$$v.totalSale",
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      $unwind: "$combinedItems",
+    },
+    {
+      $replaceRoot: { newRoot: "$combinedItems" },
+    },
+  ]);
+ */
+  const bestSelling = [...bestSellingProducts, ...bestSellingVariants].sort(
+    (a, b) => b.totalSale - a.totalSale
+  );
+  // console.log(bestSelling.length);
+
+  apiResponse.sendSucess(res, 200, "All bestselling products", bestSelling);
 });

@@ -120,17 +120,17 @@ const orderSchema = new Schema(
     orderStatus: {
       type: String,
       enum: [
-        "pending",
-        "hold",
-        "confirmed",
-        "packaging",
+        "Pending",
+        "Hold",
+        "Confirmed",
+        "Packaging",
+        "cancelled",
         // "courierPending",
         // "courier",
         // "shipped",
         // "delivered",
-        // "cancelled",
       ],
-      default: "pending",
+      default: "Pending",
     },
     invoiceId: {
       type: String,

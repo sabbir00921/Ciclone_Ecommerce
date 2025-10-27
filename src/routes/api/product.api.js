@@ -16,5 +16,6 @@ _.route("/update-product-image/:slug").put(
 );
 _.route("/search-product").get(productController.getProducts);
 _.route("/delete-product/:slug").delete(productController.deleteproduct);
+_.route("/bestselling").get(productController.bestselling);
 
 module.exports = _;

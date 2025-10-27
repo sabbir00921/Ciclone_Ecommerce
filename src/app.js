@@ -18,7 +18,7 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("short"));
 }
 app.use(express.json());
-app.use(express.urlencoded({ urlencoded: true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({ origin: "http://localhost:5171" }));
 
