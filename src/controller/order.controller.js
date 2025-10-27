@@ -376,7 +376,7 @@ exports.createCourier = asyncHandaler(async (req, res) => {
     );
     throw new CustomError(401, "O!", error);
   }
-
+// after all save into database
   await Order.save();
 
   apiResponse.sendSucess(res, 200, "Order deleted successfully", Order);
