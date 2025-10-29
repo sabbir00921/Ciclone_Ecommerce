@@ -435,3 +435,81 @@ exports.orderConfirmation = (order) => {
 </html>
 `;
 };
+
+// resendOtp verication
+exports.newUserCreatedByAdmin = (user, password) => {
+  return `
+  <html lang="en" style="margin:0; padding:0;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to ${user.companyName || "OLD ecommerce"}</title>
+  </head>
+  <body style="margin:0; padding:0; font-family:'Segoe UI', Arial, sans-serif; background-color:#f4f6f8; color:#333;">
+    <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:650px; margin:auto; background-color:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+      
+      <!-- Header -->
+      <tr>
+        <td style="background: linear-gradient(135deg, #4A90E2, #357ABD); color:#fff; text-align:center; padding:25px;">
+          <h1 style="margin:0; font-size:26px;">Welcome to ${
+            user.companyName || "OLD ecommerce"
+          }!</h1>
+          <p style="margin:5px 0 0;">Your account has been successfully created 🎉</p>
+        </td>
+      </tr>
+
+      <!-- Greeting -->
+      <tr>
+        <td style="padding:25px; font-size:16px; line-height:1.6;">
+          Hi ${user.name || "User"},<br/>
+          An account has been created for you by the admin. You can now log in and start using our platform.
+        </td>
+      </tr>
+
+      <!-- Account Details -->
+      <tr>
+        <td style="padding:0 25px 25px 25px;">
+          <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse; border:1px solid #ddd; border-radius:6px;">
+            <tr style="background-color:#f9f9f9;">
+              <td style="font-weight:bold; width:40%;">Email</td>
+              <td>${user.email}</td>
+            </tr>
+            <tr>
+              <td style="font-weight:bold;">Password</td>
+              <td>${password}</td>
+            </tr>
+            <tr>
+              <td style="font-weight:bold;">Role</td>
+              <td>${user?.role[0]?.name || "User"}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Instructions -->
+      <tr>
+        <td style="padding:0 25px 25px 25px; font-size:15px; line-height:1.7;">
+          Please log in using the above credentials.<br/>
+          For security reasons, we recommend changing your password immediately after your first login.
+        </td>
+      </tr>
+
+      <!-- Divider -->
+      <tr>
+        <td style="border-top:1px solid #eee;"></td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="background-color:#f4f6f8; text-align:center; padding:15px; font-size:12px; color:#999;">
+          &copy; 2025 ${
+            user.companyName || "OLD ecommerce"
+          }. All rights reserved.<br/>
+          If you didn’t expect this email, please contact our support team.
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `;
+};

@@ -4,96 +4,103 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const userSchema = new Schema({
-  name: {
-    type: String,
-    trim: true,
-  },
-  email: {
-    type: String,
-    trim: true,
-    unique: [true, "Email must be unique"],
-  },
-  password: {
-    type: String,
-    trim: true,
-    required: true,
-  },
-  phone: {
-    type: Number,
+const userSchema = new Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      unique: [true, "Email must be unique"],
+    },
+    password: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+    phone: {
+      type: Number,
 
-    trim: true,
-  },
-  image: {
-    type: String,
-  },
-  isEmailVerified: Boolean,
-  isPhoneVerified: Boolean,
-  address: {
-    type: String,
-  },
-  city: {
-    type: String,
-  },
-  state: {
-    type: String,
-  },
-  country: {
-    type: String,
+      trim: true,
+    },
+    image: {},
+    isEmailVerified: Boolean,
+    isPhoneVerified: Boolean,
+    address: {
+      type: String,
+    },
+    city: {
+      type: String,
+    },
+    state: {
+      type: String,
+    },
+    country: {
+      type: String,
 
-    default: "bangladesh",
-  },
-  zipCode: {
-    type: Number,
-  },
-  dateOfBirth: Date,
-  gender: {
-    type: String,
-    trim: true,
-    enum: ["male", "female", "other"],
-  },
-  lastLogin: Date,
-  lastLogout: Date,
+      default: "bangladesh",
+    },
+    zipCode: {
+      type: Number,
+    },
+    dateOfBirth: Date,
+    gender: {
+      type: String,
+      trim: true,
+      enum: ["male", "female", "other"],
+    },
+    lastLogin: Date,
+    lastLogout: Date,
 
-  cart: [
-    {
-      type: Types.ObjectId,
-      ref: "Product",
+    cart: [
+      {
+        type: Types.ObjectId,
+        ref: "Product",
+      },
+    ],
+    wishList: [
+      {
+        type: Types.ObjectId,
+        ref: "Product",
+      },
+    ],
+    newsLatterSubscribe: Boolean,
+    role: [
+      {
+        type: Types.ObjectId,
+        ref: "Role",
+      },
+    ],
+    permission: [
+      {
+        permissionId: {
+          type: Types.ObjectId,
+          ref: "Permission",
+        },
+        action: {
+          type: String,
+          enum: ["add", "read", "edit", "delete"],
+        },
+      },
+    ],
+    emailVerificationOtp: Number,
+    emailVerificationExpTime: Date,
+    phoneVerificationOtp: Number,
+    phoneVerificationExpTime: Date,
+    resetPaswordOtp: Number,
+    resetPaswordExpDate: Date,
+    twoFactorEnabled: Boolean,
+    isBlocked: Boolean,
+    isActive: Boolean,
+    refreshToken: {
+      type: String,
+      trim: true,
     },
-  ],
-  wishList: [
-    {
-      type: Types.ObjectId,
-      ref: "Product",
-    },
-  ],
-  newsLatterSubscribe: Boolean,
-  role: [
-    {
-      type: Types.ObjectId,
-      ref: "Role",
-    },
-  ],
-  permission: [
-    {
-      type: Types.ObjectId,
-      ref: "Permission",
-    },
-  ],
-  emailVerificationOtp: Number,
-  emailVerificationExpTime: Date,
-  phoneVerificationOtp: Number,
-  phoneVerificationExpTime: Date,
-  resetPaswordOtp: Number,
-  resetPaswordExpDate: Date,
-  twoFactorEnabled: Boolean,
-  isBlocked: Boolean,
-  isActive: Boolean,
-  refreshToken: {
-    type: String,
-    trim: true,
   },
-});
+  { timestamps: true }
+);
 
 // make a sash password with mongoose middleware
 userSchema.pre("save", async function (next) {
