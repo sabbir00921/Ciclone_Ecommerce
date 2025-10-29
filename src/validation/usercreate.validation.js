@@ -2,7 +2,7 @@ const Joi = require("joi");
 const { CustomError } = require("../helpers/customError");
 const mongoose = require("mongoose");
 
-const userPermissionValidationSchema = Joi.object({
+const UserCtrateValidationSchema = Joi.object({
   name: Joi.string().trim().min(5).max(16).required().messages({
     "string.base": "Name must be a string.",
     "string.empty": "Name is required and cannot be empty.",
@@ -54,10 +54,10 @@ const userPermissionValidationSchema = Joi.object({
     }),
 }).unknown(true);
 
-exports.validateUserPermission = async (req) => {
+exports.validateUserCtrate = async (req) => {
   try {
     // Validate request body
-    const value = await userPermissionValidationSchema.validateAsync(req.body, {
+    const value = await UserCtrateValidationSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 

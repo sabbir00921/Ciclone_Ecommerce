@@ -3,16 +3,19 @@ const { CustomError } = require("../helpers/customError");
 const { apiResponse } = require("../utils/apiResponse");
 const userModel = require("../model/user.model");
 const roleModel = require("../model/role.model");
+const permissionsModel = require("../model/permissions.model");
+
 const { uploadCloudinary, deleteCloudinary } = require("../helpers/cloudinary");
+const { validateUserCtrate } = require("../validation/usercreate.validation");
 const {
-  validateUserPermission,
-} = require("../validation/userpermission.validation");
+  validateUserPermissions,
+} = require("../validation/userpermation.validation");
 const { newUserCreatedByAdmin } = require("../template/registration.template");
 const { mailer } = require("../helpers/nodemailer");
 
 // create product
-exports.createUserPermission = asyncHandaler(async (req, res) => {
-  const data = await validateUserPermission(req);
+exports.createUser = asyncHandaler(async (req, res) => {
+  const data = await validateUserCtrate(req);
   // upload image into cloudinary
   if (data.image) {
     const imageAsset = await uploadCloudinary(data.image.path);
@@ -55,21 +58,35 @@ const sentMail = async (subject, template, email) => {
   // console.log("Sent email message now off");
 };
 // // sent confirmation mail
-// const sentMessage = async (number, template) => {
-//   // const response = await smsSender(number, template);
-//   console.log("Sent confimnation message now off for save money");
-// };
+const sentMessage = async (number, template) => {
+  const response = await smsSender(number, template);
+  // console.log("Sent confimnation message now off for save money");
+};
 
 //! get all user
-
-exports.getallPermissionUser = asyncHandaler(async (req, res) => {
+exports.getalluser = asyncHandaler(async (req, res) => {
   const permittedUsers = await userModel
     .find({
       role: { $exists: true, $ne: [] },
     })
+    .populate("permissions.permissionId")
     .populate("role")
     .sort({ createdAt: -1 });
   if (!permittedUsers || permittedUsers.length == 0)
     throw new CustomError(401, "No permitted user found");
   apiResponse.sendSucess(res, 200, "User created successful", permittedUsers);
+});
+
+// add user permission
+exports.addPermission = asyncHandaler(async (req, res) => {
+  const { userId, permissions } = await validateUserPermissions(req);
+  // find user
+
+  const user = await userModel.findOneAndUpdate(
+    { _id: userId },
+    { permissions: permissions },
+    { new: true }
+  );
+
+  apiResponse.sendSucess(res, 200, "User permission", user);
 });

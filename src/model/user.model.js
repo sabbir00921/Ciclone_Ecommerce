@@ -73,16 +73,18 @@ const userSchema = new Schema(
         ref: "Role",
       },
     ],
-    permission: [
+    permissions: [
       {
         permissionId: {
           type: Types.ObjectId,
-          ref: "Permission",
+          ref: "Permissions",
         },
-        action: {
-          type: String,
-          enum: ["add", "read", "edit", "delete"],
-        },
+        actions: [
+          {
+            type: String,
+            enum: ["add", "view", "edit", "delete"],
+          },
+        ],
       },
     ],
     emailVerificationOtp: Number,
@@ -135,7 +137,7 @@ userSchema.methods.comparePassword = async function (humanPass) {
 };
 
 // generate access token
-userSchema.methods.generateRefreshToken = async function () {
+userSchema.methods.generateAccessToken = async function () {
   return jwt.sign(
     {
       id: this._id,

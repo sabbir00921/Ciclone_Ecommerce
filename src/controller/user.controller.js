@@ -209,10 +209,10 @@ exports.login = asyncHandaler(async (req, res) => {
   if (!isMatchedPassword) {
     throw new CustomError(401, "Password not match !!");
   }
-  console.log(findUser.generateAccesstoken);
+  console.log(findUser.generateAccessToken);
 
   // generate access token and refresh token
-  const accessToken = await findUser.generateRefreshToken();
+  const accessToken = await findUser.generateAccessToken();
   const refreshToken = await findUser.generateRefreshtoken();
   // Set refresh token as a cookie
   res.cookie("RefreshToken", refreshToken, {
@@ -225,6 +225,9 @@ exports.login = asyncHandaler(async (req, res) => {
 
   // set refresh token into db
   findUser.refreshToken = refreshToken;
+
+  console.log(accessToken);
+
   await findUser.save();
   apiResponse.sendSucess(res, 200, "Login succesful", {
     name: findUser.name,

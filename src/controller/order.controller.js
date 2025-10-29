@@ -237,12 +237,12 @@ exports.createOrder = asyncHandaler(async (req, res) => {
 //! sent confirmation
 // sent confirmation mail
 const sentMail = async (subject, template, email) => {
-  // await mailer(subject, template, email);
+  await mailer(subject, template, email);
   console.log("Sent email message now off");
 };
 // sent confirmation mail
 const sentMessage = async (number, template) => {
-  // const response = await smsSender(number, template);
+  const response = await smsSender(number, template);
   console.log("Sent confimnation message now off for save money");
 };
 
