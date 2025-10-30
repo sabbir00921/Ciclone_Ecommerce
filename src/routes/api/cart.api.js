@@ -6,11 +6,23 @@ const _ = express.Router();
 
 _.route("/addtocart").post(
   authGuard,
-  authorized("add"),
+  authorized("cart", "add"),
   cartController.addtocart
 );
-_.route("/decrease-quantity").put(cartController.decreaseQuantity);
-_.route("/increase-quantity").put(cartController.increaseQuantity);
-_.route("/delete-item").delete(cartController.deleteCartItem);
+_.route("/decrease-quantity").put(
+  authGuard,
+  authorized("cart", "edit"),
+  cartController.decreaseQuantity
+);
+_.route("/increase-quantity").put(
+  authGuard,
+  authorized("cart", "edit"),
+  cartController.increaseQuantity
+);
+_.route("/delete-item").delete(
+  authGuard,
+  authorized("cart", "delete"),
+  cartController.deleteCartItem
+);
 
 module.exports = _;

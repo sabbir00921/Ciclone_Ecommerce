@@ -80,13 +80,34 @@ exports.getalluser = asyncHandaler(async (req, res) => {
 // add user permission
 exports.addPermission = asyncHandaler(async (req, res) => {
   const { userId, permissions } = await validateUserPermissions(req);
-  // find user
 
-  const user = await userModel.findOneAndUpdate(
-    { _id: userId },
-    { permissions: permissions },
-    { new: true }
+  // Extract all permissionIds from request
+  const permissionIds = permissions.map((p) => p.permissionId);
+
+  // Fetch all valid permission IDs from DB
+  const existingPermissions = await permissionsModel
+    .find({
+      _id: { $in: permissionIds },
+    })
+    .select("_id");
+
+  const existingIds = existingPermissions.map((p) => p._id.toString());
+
+  // Find invalid IDs
+  const invalidIds = permissionIds.filter(
+    (id) => !existingIds.includes(id.toString())
   );
 
-  apiResponse.sendSucess(res, 200, "User permission", user);
+  if (invalidIds.length > 0)
+    throw new CustomError(
+      400,
+      `Permission not found for IDs: ${invalidIds.join(", ")}`
+    );
+
+  // If all permissions are valid, update user
+  const user = await userModel
+    .findOneAndUpdate({ _id: userId }, { permissions }, { new: true })
+    .populate("permissions.permissionId", "name");
+
+  apiResponse.sendSucess(res, 200, "User permissions updated", user);
 });

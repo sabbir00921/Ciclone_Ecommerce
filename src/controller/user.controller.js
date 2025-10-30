@@ -226,8 +226,6 @@ exports.login = asyncHandaler(async (req, res) => {
   // set refresh token into db
   findUser.refreshToken = refreshToken;
 
-  console.log(accessToken);
-
   await findUser.save();
   apiResponse.sendSucess(res, 200, "Login succesful", {
     name: findUser.name,
