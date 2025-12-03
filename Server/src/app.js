@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === "development") {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors({ origin: "http://localhost:5171" }));
+app.use(cors({ origin: ["http://localhost:5171", "http://localhost:5173"] }));
 
 // route
 app.use(process.env.BASE_API || "/api/v1", require("./routes/index.api"));

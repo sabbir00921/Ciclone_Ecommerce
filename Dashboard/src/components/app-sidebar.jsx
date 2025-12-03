@@ -67,7 +67,7 @@ const data = {
         {
           title: "All Banners",
           icon: Logs,
-          url: "#",
+          url: "getall-banner",
         },
       ],
     },
